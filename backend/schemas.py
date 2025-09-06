@@ -71,6 +71,7 @@ class EventResponse(EventBase):
     created_by: int
     created_at: datetime
     updated_at: datetime
+    average_rating: Optional[float] = None
     
     class Config:
         from_attributes = True
@@ -105,6 +106,18 @@ class AttendanceResponse(AttendanceBase):
     
     class Config:
         from_attributes = True
+
+# QR Code Attendance schemas
+class QRAttendanceCreate(BaseModel):
+    event_id: int
+    qr_data: str
+
+class QRAttendanceResponse(BaseModel):
+    success: bool
+    message: str
+    attendance_id: Optional[int] = None
+    student_name: Optional[str] = None
+    event_title: Optional[str] = None
 
 # Feedback schemas
 class FeedbackBase(BaseModel):

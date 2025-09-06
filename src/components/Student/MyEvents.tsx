@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Calendar, MapPin, Users, Clock, Star, CheckCircle, XCircle } from 'lucide-react';
+import { Calendar, MapPin, Users, Clock, Star, CheckCircle, XCircle, QrCode } from 'lucide-react';
 import { format } from 'date-fns';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { EventWithStats } from '../../types';
+import QRAttendance from './QRAttendance';
 
 interface MyEventsProps {
   registeredEvents: EventWithStats[];
@@ -22,14 +23,35 @@ export const MyEvents: React.FC<MyEventsProps> = ({
   onSubmitFeedback,
 }) => {
   const [showFeedbackForm, setShowFeedbackForm] = useState<string | null>(null);
+  const [showQRCode, setShowQRCode] = useState<string | null>(null);
   const [feedbackRating, setFeedbackRating] = useState(5);
   const [feedbackComment, setFeedbackComment] = useState('');
+  const [attendanceLoading, setAttendanceLoading] = useState<string | null>(null);
+  const [attendanceError, setAttendanceError] = useState<string | null>(null);
+  const [attendanceSuccess, setAttendanceSuccess] = useState<string | null>(null);
 
   const handleFeedbackSubmit = (eventId: string) => {
     onSubmitFeedback(eventId, feedbackRating, feedbackComment);
     setShowFeedbackForm(null);
     setFeedbackRating(5);
     setFeedbackComment('');
+  };
+
+  const handleMarkAttendance = async (eventId: string) => {
+    setAttendanceLoading(eventId);
+    setAttendanceError(null);
+    setAttendanceSuccess(null);
+    
+    try {
+      await onMarkAttendance(eventId);
+      setAttendanceSuccess(eventId);
+      setTimeout(() => setAttendanceSuccess(null), 3000);
+    } catch (error: any) {
+      setAttendanceError(error.message || 'Failed to mark attendance');
+      setTimeout(() => setAttendanceError(null), 5000);
+    } finally {
+      setAttendanceLoading(null);
+    }
   };
 
   const getTypeColor = (type: string) => {
@@ -108,15 +130,61 @@ export const MyEvents: React.FC<MyEventsProps> = ({
 
                 <p className="text-sm text-gray-600 line-clamp-2">{event.description}</p>
 
-                {isEventToday(event.date) && !isAttended(event.id) && (
-                  <Button
-                    onClick={() => onMarkAttendance(event.id)}
-                    className="w-full"
-                    variant="primary"
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Mark Attendance
-                  </Button>
+                {/* Error/Success Messages */}
+                {attendanceError && (
+                  <div className="p-3 bg-red-100 text-red-800 rounded-lg text-sm">
+                    {attendanceError}
+                  </div>
+                )}
+                {attendanceSuccess === event.id && (
+                  <div className="p-3 bg-green-100 text-green-800 rounded-lg text-sm">
+                    Attendance marked successfully!
+                  </div>
+                )}
+
+                {!isAttended(event.id) && (
+                  <div className="space-y-3">
+                    <div className="flex space-x-2">
+                      {isEventToday(event.date) && (
+                        <Button
+                          onClick={() => handleMarkAttendance(event.id)}
+                          className="flex-1"
+                          variant="primary"
+                          disabled={attendanceLoading === event.id}
+                        >
+                          {attendanceLoading === event.id ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                              Marking...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Mark Attendance
+                            </>
+                          )}
+                        </Button>
+                      )}
+                      <Button
+                        onClick={() => setShowQRCode(showQRCode === event.id ? null : event.id)}
+                        className="flex-1"
+                        variant="outline"
+                      >
+                        <QrCode className="h-4 w-4 mr-2" />
+                        {showQRCode === event.id ? 'Hide QR' : 'Show QR'}
+                      </Button>
+                    </div>
+                    
+                    {showQRCode === event.id && (
+                      <div className="mt-4">
+                        <QRAttendance
+                          eventId={parseInt(event.id)}
+                          eventTitle={event.title}
+                          isRegistered={true}
+                        />
+                      </div>
+                    )}
+                  </div>
                 )}
               </Card>
             ))}

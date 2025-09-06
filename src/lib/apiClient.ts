@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // API base URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000';
 
 // Create axios instance
 const apiClient = axios.create({
@@ -59,6 +59,11 @@ export const authAPI = {
 
   getCurrentUser: async () => {
     const response = await apiClient.get('/auth/me');
+    return response.data;
+  },
+
+  getUsers: async () => {
+    const response = await apiClient.get('/users');
     return response.data;
   },
 };
@@ -157,6 +162,20 @@ export const attendanceAPI = {
     });
     return response.data;
   },
+
+  // QR Code attendance methods
+  markQRAttendance: async (eventId: number, qrData: string) => {
+    const response = await apiClient.post('/attendance/qr', {
+      event_id: eventId,
+      qr_data: qrData,
+    });
+    return response.data;
+  },
+
+  markStudentQRAttendance: async (eventId: number) => {
+    const response = await apiClient.post(`/attendance/qr/student?event_id=${eventId}`);
+    return response.data;
+  },
 };
 
 // Feedback API
@@ -178,6 +197,16 @@ export const feedbackAPI = {
       rating,
       comment,
     });
+    return response.data;
+  },
+
+  getEventFeedback: async (eventId: number) => {
+    const response = await apiClient.get(`/events/${eventId}/feedback`);
+    return response.data;
+  },
+
+  getEventAverageRating: async (eventId: number) => {
+    const response = await apiClient.get(`/events/${eventId}/average-rating`);
     return response.data;
   },
 };

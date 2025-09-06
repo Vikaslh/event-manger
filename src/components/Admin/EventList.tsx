@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Users, MapPin, Calendar } from 'lucide-react';
+import { Plus, Edit, Trash2, Users, MapPin, Calendar, QrCode } from 'lucide-react';
 import { format } from 'date-fns';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
@@ -13,6 +13,7 @@ interface EventListProps {
   onCreateEvent: () => void;
   onEditEvent: (event: EventWithStats) => void;
   onDeleteEvent: (eventId: string) => void;
+  onScanQR?: (event: EventWithStats) => void;
 }
 
 export const EventList: React.FC<EventListProps> = ({
@@ -20,6 +21,7 @@ export const EventList: React.FC<EventListProps> = ({
   onCreateEvent,
   onEditEvent,
   onDeleteEvent,
+  onScanQR,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
@@ -102,6 +104,16 @@ export const EventList: React.FC<EventListProps> = ({
                 >
                   <Edit className="h-4 w-4" />
                 </Button>
+                {onScanQR && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => onScanQR(event)}
+                    title="Scan QR for Attendance"
+                  >
+                    <QrCode className="h-4 w-4" />
+                  </Button>
+                )}
                 <Button
                   variant="danger"
                   size="sm"

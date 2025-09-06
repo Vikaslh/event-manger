@@ -135,7 +135,7 @@ export const EventBrowser: React.FC<EventBrowserProps> = ({
                   <div className="flex items-center justify-center space-x-1">
                     <Star className="h-4 w-4 text-yellow-500" />
                     <span className="text-lg font-semibold text-yellow-600">
-                      {event.averageFeedback.toFixed(1)}
+                      {event.averageRating ? event.averageRating.toFixed(1) : 'N/A'}
                     </span>
                   </div>
                   <div className="text-xs text-gray-500">Rating</div>

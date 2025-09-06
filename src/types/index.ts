@@ -19,6 +19,7 @@ export interface Event {
   description: string;
   location: string;
   maxAttendees?: number;
+  averageRating?: number;
 }
 
 export interface Registration {
@@ -45,7 +46,10 @@ export interface EventWithStats extends Event {
   registrationCount: number;
   attendanceCount: number;
   averageFeedback: number;
+  averageRating?: number;
   collegeName: string;
+  createdBy?: number;
+  creatorName?: string;
 }
 
 export interface StudentWithStats extends Student {

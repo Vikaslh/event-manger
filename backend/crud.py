@@ -129,3 +129,17 @@ def create_feedback(db: Session, feedback_data: FeedbackCreate, student_id: int)
 
 def get_user_feedback(db: Session, student_id: int) -> List[Feedback]:
     return db.query(Feedback).filter(Feedback.student_id == student_id).all()
+
+def get_event_feedback(db: Session, event_id: int) -> List[Feedback]:
+    return db.query(Feedback).filter(Feedback.event_id == event_id).all()
+
+def get_event_average_rating(db: Session, event_id: int) -> float:
+    """Calculate average rating for an event"""
+    feedbacks = db.query(Feedback).filter(Feedback.event_id == event_id).all()
+    if not feedbacks:
+        return 0.0
+    total_rating = sum(f.rating for f in feedbacks)
+    return round(total_rating / len(feedbacks), 1)
+
+def get_all_feedback(db: Session) -> List[Feedback]:
+    return db.query(Feedback).all()

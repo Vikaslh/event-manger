@@ -7,13 +7,14 @@ import {
   Attendance,
   Feedback
 } from '../types';
-import { eventAPI, registrationAPI, attendanceAPI, feedbackAPI, collegeAPI } from '../lib/apiClient';
+import { eventAPI, registrationAPI, attendanceAPI, feedbackAPI, collegeAPI, authAPI } from '../lib/apiClient';
 import { useAuth } from '../contexts/AuthContext';
 
 export const useEventDataAPI = () => {
   const { user } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
   const [colleges, setColleges] = useState<Array<{ id: number; name: string }>>([]);
+  const [users, setUsers] = useState<Array<{ id: number; full_name: string }>>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [attendance, setAttendance] = useState<Attendance[]>([]);
   const [feedback, setFeedback] = useState<Feedback[]>([]);
@@ -29,9 +30,10 @@ export const useEventDataAPI = () => {
         
         // Load different data based on user role
         const isAdmin = user.role === 'admin';
-        const [eventsData, collegesData, registrationsData, attendanceData, feedbackData] = await Promise.all([
+        const [eventsData, collegesData, usersData, registrationsData, attendanceData, feedbackData] = await Promise.all([
           eventAPI.getEvents(),
           collegeAPI.getColleges(),
+          isAdmin ? authAPI.getUsers() : Promise.resolve([]),
           isAdmin ? registrationAPI.getAllRegistrations() : registrationAPI.getMyRegistrations(),
           isAdmin ? attendanceAPI.getAllAttendance() : attendanceAPI.getMyAttendance(),
           isAdmin ? feedbackAPI.getAllFeedback() : feedbackAPI.getMyFeedback(),
@@ -48,6 +50,11 @@ export const useEventDataAPI = () => {
         const transformedColleges = collegesData.map(college => ({
           ...college,
           id: college.id.toString(),
+        }));
+
+        const transformedUsers = usersData.map(user => ({
+          ...user,
+          id: user.id.toString(),
         }));
 
         const transformedRegistrations = registrationsData.map(registration => ({
@@ -77,6 +84,7 @@ export const useEventDataAPI = () => {
 
         setEvents(transformedEvents);
         setColleges(transformedColleges);
+        setUsers(transformedUsers);
         setRegistrations(transformedRegistrations);
         setAttendance(transformedAttendance);
         setFeedback(transformedFeedback);
@@ -106,6 +114,7 @@ export const useEventDataAPI = () => {
         : 0;
 
       const college = colleges.find(c => c.id === event.collegeId);
+      const creator = users.find(u => u.id === event.createdBy);
 
       return {
         ...event,
@@ -113,9 +122,10 @@ export const useEventDataAPI = () => {
         attendanceCount: eventAttendance.length,
         averageFeedback,
         collegeName: college?.name || 'Unknown College',
+        creatorName: creator?.full_name || 'Unknown Creator',
       };
     });
-  }, [events, registrations, attendance, feedback, colleges]);
+  }, [events, registrations, attendance, feedback, colleges, users]);
 
   // Students with statistics (for admin view)
   const studentsWithStats: StudentWithStats[] = useMemo(() => {
@@ -269,21 +279,34 @@ export const useEventDataAPI = () => {
   const markAttendance = async (eventId: string) => {
     try {
       const registration = registrations.find(r => r.eventId === eventId);
-      if (registration) {
-        const newAttendance = await attendanceAPI.createAttendance(parseInt(registration.id), parseInt(eventId));
-        
-        // Transform the response to frontend format
-        const transformedAttendance = {
-          ...newAttendance,
-          id: newAttendance.id.toString(),
-          registrationId: newAttendance.registration_id.toString(),
-          studentId: newAttendance.student_id.toString(),
-          eventId: newAttendance.event_id.toString(),
-          checkInTime: newAttendance.check_in_time,
-        };
-        
-        setAttendance(prev => [...prev, transformedAttendance]);
+      if (!registration) {
+        throw new Error('Registration not found. Please register for this event first.');
       }
+      
+      // Check if attendance already exists
+      const existingAttendance = attendance.find(a => {
+        const attendanceRegistration = registrations.find(r => r.id === a.registrationId);
+        return attendanceRegistration?.eventId === eventId && a.studentId === user?.id?.toString();
+      });
+      
+      if (existingAttendance) {
+        throw new Error('Attendance already marked for this event.');
+      }
+      
+      const newAttendance = await attendanceAPI.createAttendance(parseInt(registration.id), parseInt(eventId));
+      
+      // Transform the response to frontend format
+      const transformedAttendance = {
+        ...newAttendance,
+        id: newAttendance.id.toString(),
+        registrationId: newAttendance.registration_id.toString(),
+        studentId: newAttendance.student_id.toString(),
+        eventId: newAttendance.event_id.toString(),
+        checkInTime: newAttendance.check_in_time,
+      };
+      
+      setAttendance(prev => [...prev, transformedAttendance]);
+      return transformedAttendance;
     } catch (error) {
       console.error('Failed to mark attendance:', error);
       throw error;

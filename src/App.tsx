@@ -4,18 +4,21 @@ import { Header } from './components/Layout/Header';
 import { EventList } from './components/Admin/EventList';
 import { EventForm } from './components/Admin/EventForm';
 import { Reports } from './components/Admin/Reports';
+import QRScannerModal from './components/Admin/QRScannerModal';
 import { EventBrowser } from './components/Student/EventBrowser';
 import { MyEvents } from './components/Student/MyEvents';
 import { AuthPage } from './components/Auth/AuthPage';
 import { useEventDataAPI } from './hooks/useEventDataAPI';
 import { useAuth } from './contexts/AuthContext';
-import { Event } from './types';
+import { Event, EventWithStats } from './types';
 
 function App() {
   const { isAuthenticated, user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState('browse');
   const [showEventForm, setShowEventForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | undefined>();
+  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [scanningEvent, setScanningEvent] = useState<EventWithStats | null>(null);
 
   const {
     eventsWithStats,
@@ -71,6 +74,16 @@ function App() {
     setEditingEvent(undefined);
   };
 
+  const handleScanQR = (event: EventWithStats) => {
+    setScanningEvent(event);
+    setShowQRScanner(true);
+  };
+
+  const handleCloseQRScanner = () => {
+    setShowQRScanner(false);
+    setScanningEvent(null);
+  };
+
 
   const renderContent = () => {
     if (userType === 'admin') {
@@ -82,6 +95,7 @@ function App() {
               onCreateEvent={handleCreateEvent}
               onEditEvent={handleEditEvent}
               onDeleteEvent={deleteEvent}
+              onScanQR={handleScanQR}
             />
           );
         case 'reports':
@@ -150,6 +164,14 @@ function App() {
             setShowEventForm(false);
             setEditingEvent(undefined);
           }}
+        />
+      )}
+
+      {showQRScanner && (
+        <QRScannerModal
+          isOpen={showQRScanner}
+          onClose={handleCloseQRScanner}
+          event={scanningEvent}
         />
       )}
     </div>

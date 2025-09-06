@@ -13,17 +13,21 @@ interface ReportsProps {
 export const Reports: React.FC<ReportsProps> = ({ events, students }) => {
   const [selectedCollege, setSelectedCollege] = useState('');
   const [selectedEventType, setSelectedEventType] = useState('');
+  const [selectedCreator, setSelectedCreator] = useState('');
+  const [selectedEvent, setSelectedEvent] = useState('');
 
   const filteredEvents = events.filter(event => {
     const matchesCollege = !selectedCollege || event.collegeName.includes(selectedCollege);
     const matchesType = !selectedEventType || event.type === selectedEventType;
-    return matchesCollege && matchesType;
+    const matchesCreator = !selectedCreator || event.creatorName?.includes(selectedCreator);
+    const matchesEvent = !selectedEvent || event.id === selectedEvent;
+    return matchesCollege && matchesType && matchesCreator && matchesEvent;
   });
 
   // Calculate statistics
   const totalRegistrations = filteredEvents.reduce((sum, event) => sum + event.registrationCount, 0);
   const totalAttendance = filteredEvents.reduce((sum, event) => sum + event.attendanceCount, 0);
-  const averageRating = filteredEvents.reduce((sum, event) => sum + event.averageFeedback, 0) / filteredEvents.length || 0;
+  const averageRating = filteredEvents.reduce((sum, event) => sum + (event.averageRating || 0), 0) / filteredEvents.length || 0;
   const attendanceRate = totalRegistrations > 0 ? (totalAttendance / totalRegistrations) * 100 : 0;
 
   // Event popularity data
@@ -57,6 +61,7 @@ export const Reports: React.FC<ReportsProps> = ({ events, students }) => {
 
   const colleges = [...new Set(events.map(e => e.collegeName))];
   const eventTypes = ['Workshop', 'Fest', 'Seminar', 'Conference', 'Sports', 'Cultural'];
+  const creators = [...new Set(events.map(e => e.creatorName).filter(Boolean))];
 
   const collegeOptions = [
     { value: '', label: 'All Colleges' },
@@ -68,11 +73,24 @@ export const Reports: React.FC<ReportsProps> = ({ events, students }) => {
     ...eventTypes.map(type => ({ value: type, label: type })),
   ];
 
+  const creatorOptions = [
+    { value: '', label: 'All Creators' },
+    ...creators.map(creator => ({ value: creator, label: creator })),
+  ];
+
+  const eventOptions = [
+    { value: '', label: 'All Events' },
+    ...events.map(event => ({ 
+      value: event.id, 
+      label: `${event.title} (${event.type})` 
+    })),
+  ];
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col gap-4">
         <h1 className="text-2xl font-bold text-gray-900">Reports & Analytics</h1>
-        <div className="flex space-x-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Select
             value={selectedCollege}
             onChange={(e) => setSelectedCollege(e.target.value)}
@@ -82,6 +100,16 @@ export const Reports: React.FC<ReportsProps> = ({ events, students }) => {
             value={selectedEventType}
             onChange={(e) => setSelectedEventType(e.target.value)}
             options={typeOptions}
+          />
+          <Select
+            value={selectedCreator}
+            onChange={(e) => setSelectedCreator(e.target.value)}
+            options={creatorOptions}
+          />
+          <Select
+            value={selectedEvent}
+            onChange={(e) => setSelectedEvent(e.target.value)}
+            options={eventOptions}
           />
         </div>
       </div>
@@ -112,6 +140,83 @@ export const Reports: React.FC<ReportsProps> = ({ events, students }) => {
           <div className="text-sm text-gray-600">Average Rating</div>
         </Card>
       </div>
+
+      {/* Detailed Event Analytics - Show when specific event is selected */}
+      {selectedEvent && filteredEvents.length === 1 && (
+        <Card>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Detailed Analytics: {filteredEvents[0].title}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <div className="text-2xl font-bold text-blue-600">{filteredEvents[0].registrationCount}</div>
+              <div className="text-sm text-blue-800">Total Registrations</div>
+            </div>
+            <div className="text-center p-4 bg-green-50 rounded-lg">
+              <div className="text-2xl font-bold text-green-600">{filteredEvents[0].attendanceCount}</div>
+              <div className="text-sm text-green-800">Total Attendance</div>
+            </div>
+            <div className="text-center p-4 bg-yellow-50 rounded-lg">
+              <div className="text-2xl font-bold text-yellow-600">
+                {filteredEvents[0].registrationCount > 0 
+                  ? ((filteredEvents[0].attendanceCount / filteredEvents[0].registrationCount) * 100).toFixed(1)
+                  : 0}%
+              </div>
+              <div className="text-sm text-yellow-800">Attendance Rate</div>
+            </div>
+            <div className="text-center p-4 bg-purple-50 rounded-lg">
+              <div className="text-2xl font-bold text-purple-600">
+                {filteredEvents[0].averageRating ? filteredEvents[0].averageRating.toFixed(1) : 'N/A'}
+              </div>
+              <div className="text-sm text-purple-800">Average Rating</div>
+            </div>
+          </div>
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="font-medium text-gray-900 mb-2">Event Details</h4>
+              <div className="space-y-2 text-sm text-gray-600">
+                <div><span className="font-medium">Type:</span> {filteredEvents[0].type}</div>
+                <div><span className="font-medium">College:</span> {filteredEvents[0].collegeName}</div>
+                <div><span className="font-medium">Creator:</span> {filteredEvents[0].creatorName}</div>
+                <div><span className="font-medium">Date:</span> {new Date(filteredEvents[0].date).toLocaleDateString()}</div>
+                <div><span className="font-medium">Location:</span> {filteredEvents[0].location}</div>
+                {filteredEvents[0].maxAttendees && (
+                  <div><span className="font-medium">Max Attendees:</span> {filteredEvents[0].maxAttendees}</div>
+                )}
+              </div>
+            </div>
+            <div>
+              <h4 className="font-medium text-gray-900 mb-2">Performance Metrics</h4>
+              <div className="space-y-2 text-sm text-gray-600">
+                <div>
+                  <span className="font-medium">Registration Fill Rate:</span>{' '}
+                  {filteredEvents[0].maxAttendees 
+                    ? `${((filteredEvents[0].registrationCount / filteredEvents[0].maxAttendees) * 100).toFixed(1)}%`
+                    : 'N/A'
+                  }
+                </div>
+                <div>
+                  <span className="font-medium">No-Show Rate:</span>{' '}
+                  {filteredEvents[0].registrationCount > 0 
+                    ? `${(((filteredEvents[0].registrationCount - filteredEvents[0].attendanceCount) / filteredEvents[0].registrationCount) * 100).toFixed(1)}%`
+                    : 'N/A'
+                  }
+                </div>
+                <div>
+                  <span className="font-medium">Event Status:</span>{' '}
+                  <span className={`px-2 py-1 rounded text-xs ${
+                    new Date(filteredEvents[0].date) < new Date() 
+                      ? 'bg-gray-100 text-gray-800' 
+                      : 'bg-green-100 text-green-800'
+                  }`}>
+                    {new Date(filteredEvents[0].date) < new Date() ? 'Completed' : 'Upcoming'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Event Popularity Chart */}

@@ -1,4 +1,4 @@
-#!/Users/vikaslh/Downloads/campus_event_management_&_reporting_system_817yhp_alphaproject/backend/venv/bin/python3.12
+#!/Users/vikaslh/Downloads/event/backend/venv/bin/python3.12
 # -*- coding: utf-8 -*-
 import re
 import sys
