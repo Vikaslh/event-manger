@@ -202,6 +202,15 @@ async def create_registration_endpoint(registration_data: RegistrationCreate, cu
 async def get_my_registrations(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return get_user_registrations(db, current_user.id)
 
+@app.get("/registrations/all", response_model=List[RegistrationResponse])
+async def get_all_registrations(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admins can view all registrations"
+        )
+    return db.query(Registration).all()
+
 # Attendance endpoints
 @app.post("/attendance", response_model=AttendanceResponse)
 async def create_attendance_endpoint(attendance_data: AttendanceCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -211,6 +220,15 @@ async def create_attendance_endpoint(attendance_data: AttendanceCreate, current_
 async def get_my_attendance(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return get_user_attendance(db, current_user.id)
 
+@app.get("/attendance/all", response_model=List[AttendanceResponse])
+async def get_all_attendance(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admins can view all attendance"
+        )
+    return db.query(Attendance).all()
+
 # Feedback endpoints
 @app.post("/feedback", response_model=FeedbackResponse)
 async def create_feedback_endpoint(feedback_data: FeedbackCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -219,6 +237,15 @@ async def create_feedback_endpoint(feedback_data: FeedbackCreate, current_user: 
 @app.get("/feedback/my", response_model=List[FeedbackResponse])
 async def get_my_feedback(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return get_user_feedback(db, current_user.id)
+
+@app.get("/feedback/all", response_model=List[FeedbackResponse])
+async def get_all_feedback(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admins can view all feedback"
+        )
+    return db.query(Feedback).all()
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

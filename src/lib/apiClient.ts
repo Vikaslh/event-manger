@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // API base URL
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 // Create axios instance
 const apiClient = axios.create({
@@ -127,6 +127,11 @@ export const registrationAPI = {
     return response.data;
   },
 
+  getAllRegistrations: async () => {
+    const response = await apiClient.get('/registrations/all');
+    return response.data;
+  },
+
   createRegistration: async (eventId: number) => {
     const response = await apiClient.post('/registrations', { event_id: eventId });
     return response.data;
@@ -137,6 +142,11 @@ export const registrationAPI = {
 export const attendanceAPI = {
   getMyAttendance: async () => {
     const response = await apiClient.get('/attendance/my');
+    return response.data;
+  },
+
+  getAllAttendance: async () => {
+    const response = await apiClient.get('/attendance/all');
     return response.data;
   },
 
@@ -153,6 +163,11 @@ export const attendanceAPI = {
 export const feedbackAPI = {
   getMyFeedback: async () => {
     const response = await apiClient.get('/feedback/my');
+    return response.data;
+  },
+
+  getAllFeedback: async () => {
+    const response = await apiClient.get('/feedback/all');
     return response.data;
   },
 

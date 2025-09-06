@@ -26,12 +26,15 @@ export const useEventDataAPI = () => {
       
       try {
         setLoading(true);
+        
+        // Load different data based on user role
+        const isAdmin = user.role === 'admin';
         const [eventsData, collegesData, registrationsData, attendanceData, feedbackData] = await Promise.all([
           eventAPI.getEvents(),
           collegeAPI.getColleges(),
-          registrationAPI.getMyRegistrations(),
-          attendanceAPI.getMyAttendance(),
-          feedbackAPI.getMyFeedback(),
+          isAdmin ? registrationAPI.getAllRegistrations() : registrationAPI.getMyRegistrations(),
+          isAdmin ? attendanceAPI.getAllAttendance() : attendanceAPI.getMyAttendance(),
+          isAdmin ? feedbackAPI.getAllFeedback() : feedbackAPI.getMyFeedback(),
         ]);
 
         // Transform backend data to frontend format (convert IDs to strings)
@@ -219,6 +222,44 @@ export const useEventDataAPI = () => {
       };
       
       setRegistrations(prev => [...prev, transformedRegistration]);
+      
+      // If user is admin, refresh all data to get updated statistics
+      if (user?.role === 'admin') {
+        const [allRegistrations, allAttendance, allFeedback] = await Promise.all([
+          registrationAPI.getAllRegistrations(),
+          attendanceAPI.getAllAttendance(),
+          feedbackAPI.getAllFeedback(),
+        ]);
+        
+        const transformedRegistrations = allRegistrations.map(registration => ({
+          ...registration,
+          id: registration.id.toString(),
+          studentId: registration.student_id.toString(),
+          eventId: registration.event_id.toString(),
+          timestamp: registration.created_at,
+        }));
+        
+        const transformedAttendance = allAttendance.map(attendance => ({
+          ...attendance,
+          id: attendance.id.toString(),
+          registrationId: attendance.registration_id.toString(),
+          studentId: attendance.student_id.toString(),
+          eventId: attendance.event_id.toString(),
+          checkInTime: attendance.check_in_time,
+        }));
+        
+        const transformedFeedback = allFeedback.map(feedback => ({
+          ...feedback,
+          id: feedback.id.toString(),
+          registrationId: feedback.registration_id.toString(),
+          studentId: feedback.student_id.toString(),
+          eventId: feedback.event_id.toString(),
+        }));
+        
+        setRegistrations(transformedRegistrations);
+        setAttendance(transformedAttendance);
+        setFeedback(transformedFeedback);
+      }
     } catch (error) {
       console.error('Failed to register for event:', error);
       throw error;
